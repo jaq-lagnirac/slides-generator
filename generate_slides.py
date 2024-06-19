@@ -8,7 +8,8 @@ import sys
 import logging
 import argparse
 from pptx import Presentation
-from PIL import Image
+from pptx.util import Inches, Pt
+from pptx.enum.text import PP_ALIGN
 
 # logging formatting
 SCRIPT_PATH = os.path.abspath(__file__)
@@ -44,16 +45,19 @@ def check_dir(dir : str) -> str:
 
     """
 
+    if not os.path.isdir(dir):
+        error(f'Input {dir} is not a directory.')
+        sys.exit(1)
+
     if not os.path.exists(dir):
         error(f'Directory {dir} not found.')
         sys.exit(1)
 
-    if not os.path.isdir(dir):
-        error(f'Input {dir} is not a directory.')
-        sys.exit(1)
+    # adds safety slash '/' to end of dir str in order to prevent unaccounted outputs
+    if dir[-1] != '/': # if last char is not a '/', add a /
+        dir += '/'
     
     dirname = os.path.split(os.path.dirname(dir))[-1] # takes last value
-    print(dirname)
 
     return dirname
 
@@ -80,50 +84,74 @@ def is_image(file : str) -> bool | str:
     return True
 
 
+# def add_textbox(slide : Presentation,
+#                 left : Inches,
+#                 top : Inches,
+#                 width : Inches,
+#                 height : Inches,
+#                 text : str) -> :
+
+
 def main() -> None:
     """MAIN FUNCTION"""
 
     # checks existence of dir, extracts dirname
     dirname = check_dir(args.dir)
 
-    print(args.dir)
-    print(os.path.dirname(args.dir))
     # inits presentation
     prez = Presentation()
+    # sets aspect ratio to standard Google Slides size
+    prez.slide_width = Inches(10)
+    prez.slide_height = Inches(5.625)
     
     # adds title slide
-    slide = prez.slides.add_slide(prez.slide_layouts[0]) # pos=0, Title Slide
-    title = slide.shapes.title
-    subtitle = slide.placeholders[1]
-
-    # formats title slide
-    title.text = dirname
-    subtitle.text = 'Created using tools developed by Justin Caringal'
+    slide = prez.slides.add_slide(prez.slide_layouts[6]) # pos=6, Blank
+    # generates title
+    left = Inches(1)
+    top = Inches(2)
+    width = Inches(8)
+    height = Inches(1)
+    title = slide.shapes.add_textbox(left, top, width, height)
+    tf = title.text_frame
+    p = tf.add_paragraph()
+    p.text = dirname
+    p.font.bold = True
+    p.font.size = Pt(32)
+    p.alignment = PP_ALIGN.CENTER
+    # generates subtitle
+    top = Inches(3)
+    title = slide.shapes.add_textbox(left, top, width, height)
+    tf = title.text_frame
+    p = tf.add_paragraph()
+    p.text = 'Created using tools developed by Justin Caringal'
+    p.font.size = Pt(24)
+    p.alignment = PP_ALIGN.CENTER
 
     # iterates through image directory to create slides
+    left = Inches(0.5)
+    top = Inches(0)
+    width = Inches(8)
+    height = Inches(1)
+    img_top = Inches(1.1)
+    img_height = Inches(4.275)
     for img_basename in os.listdir(args.dir):
-        # creates relative path to image
-        img_path = os.path.join(args.dir, img_basename)
 
         # creates new slide
-        slide = prez.slides.add_slide(prez.slide_layouts[8]) # pos=8, Picture with Caption
+        slide = prez.slides.add_slide(prez.slide_layouts[6]) # pos=6, Blank
         
-        # creates placeholders using idx key, not position
-        title_placeholder = slide.placeholders[0] # pos=1 Title
-        img_placeholder = slide.placeholders[1]  # pos=2 Picture Placeholder
-        caption_placeholder = slide.placeholders[2] # pos=3 Text Placeholder
+        # adds title to slide
+        title = slide.shapes.add_textbox(left, top, width, height)
+        tf = title.text_frame
+        # tf.text = img_basename
+        # tf.fit_text(max_size=32) # OSError: unsupported OS, no installed fonts due to dev in WSL
+        p = tf.add_paragraph()
+        p.text = img_basename
+        p.font.bold = True
+        p.font.size = Pt(32)
 
-        title_placeholder.text = img_basename
-        picture = img_placeholder.insert_picture(img_path)
-        pillow_img = Image.open(img_path)
-        print(pillow_img.width, pillow_img.height, type(pillow_img.width))
-        # picture.width = pillow_img.width
-        # picture.height = pillow_img.height
-        picture.crop_top = 0.0
-        picture.crop_bottom = 0.0
-        # picture.crop_left = 0.0
-        # picture.crop_right = 0.0
-        caption_placeholder.text = f'The image from {img_path}'
+        # adds image to slide
+        img_path = os.path.join(args.dir, img_basename) # creates relative path to image
+        image = slide.shapes.add_picture(img_path, left, img_top, height=img_height)
 
 
     prez.save(f'{dirname}.pptx')
