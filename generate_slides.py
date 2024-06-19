@@ -21,14 +21,17 @@ l.addHandler(lh)
 l.setLevel(logging.INFO)
 debug = l.debug; info = l.info; warning = l.warning; error = l.error
 
-# argparse constants
-DESCRIPTION = '''
-'''
-EPILOG = '''
-'''
-
 # constants
 ACCEPTABLE_IMG_TYPES = ['.jpg', '.png', '.jpeg']
+
+# argparse constants
+DESCRIPTION = f'''A tool to convert a directory of images into a .pptx/slides
+deck template for further human refinement (requested by Evelyn Schmidt, WashU).
+Allows the following image extensions: {ACCEPTABLE_IMG_TYPES}
+'''
+EPILOG = '''For more information please feel free to reach out to github@jaq-lagnirac
+and visit the Github page for this tool.
+'''
 
 
 def check_dir(dir : str) -> str:
